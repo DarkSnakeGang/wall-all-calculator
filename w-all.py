@@ -129,6 +129,21 @@ def new_wall(b):
         b[-1][-3] = 1
     return True
 
+def darklightcheck(b):
+    dark = 0
+    light = 0
+    for j in range(len(b)):
+        for i in range(len(b[0])):
+            if b[j][i] != 2:
+                if (i+j)%2 == 0:
+                    light += 1
+                else:
+                    dark += 1
+    if dark == light:
+        return True
+    return False
+
+
 def render(b):
     ''' (list) -> None
     prints a nice version of the board (does not take snake into account) see also: render_compound()
@@ -455,6 +470,7 @@ class Pattern:
                 return g2
         return False
 
+last_res = []
 
 def check(n,x,y,m=False):
     ''' (int,int,int,int) -> None
@@ -465,37 +481,41 @@ def check(n,x,y,m=False):
     r = 0
     q = []
     for i in range(n):
-        b = Pattern(x,y)
-        prev = copy(b)
-        j = 0
-        if m:
-            while j < m:
-                b.step()
-                if not b.ham:
-                    j = m
-                j += 1
-        else:
-            b.work(lim=False)
-        if b.ham:
+        w = new_pattern(x,y)
+        if darklightcheck(w):
+            b = Pattern(x,y,wmap=w)
+            prev = copy(b)
+            j = 0
             if m:
-                c = m
-                h = m
-            while prev != b:
-                prev = copy(b)
-                if b.step(True):
-                    if m:
-                        h += 1
+                while j < m:
+                    b.step()
+                    if not b.ham:
+                        j = m
+                    j += 1
+            else:
+                b.work(lim=False)
+            if b.ham:
                 if m:
-                    c += 1
-            if m:
-                print(b,h,"/",c)
-            q += [copy(b)]
-            r += 1
+                    c = m
+                    h = m
+                while prev != b:
+                    prev = copy(b)
+                    if b.step(True):
+                        if m:
+                            h += 1
+                    if m:
+                        c += 1
+                if m:
+                    print(b,h,"/",c)
+                q += [copy(b)]
+                r += 1
     print(r,"results")
+    global last_res
+    last_res = copy(q)
     r2 = 0
     for p in q:
         s = p.solve()
         if s:
             print(s)
             r2 += 1
-    print("{} hamcycles (out of {} results)".format(r2,r))
+    print(f"{r2} hamcycles (out of {r} results)")
