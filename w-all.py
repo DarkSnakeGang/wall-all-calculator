@@ -417,6 +417,19 @@ class Pattern:
                     n += 1
         return n
 
+    def basewallmap(self):
+        ''' (Pattern) -> list
+        returns wallmap without snake pieces
+        '''
+        w = newblank(self.lenx,self.leny)
+        for j in range(self.leny):
+            for i in range(self.lenx):
+                if self.wallmap[j][i] == 2:
+                    w[j][i] = 2
+                else:
+                    w[j][i] = 1
+        return w
+
     def firstempty(self):
         ''' (Pattern) -> tuple
         returns coordinate pair of first empty tile in the pattern
@@ -425,6 +438,18 @@ class Pattern:
             for i in range(self.lenx):
                 if self.wallmap[j][i] == 1:
                     return (i,j)
+
+    def allempty(self):
+        ''' (Pattern) -> list
+        returns list of coordinate pairs of all empty tiles
+        '''
+        l = []
+        base = self.basewallmap()
+        for j in range(self.leny):
+            for i in range(self.lenx):
+                if base[j][i] == 1:
+                    l += [(i,j)]
+        return l
 
     def solve(self):
         ''' (Pattern) -> bool
@@ -443,7 +468,7 @@ class Pattern:
         if fe == None:
             return False
         guess.wallmap[fe[1]][fe[0]] = 3
-        # the following works because the first empty can be demonstrated to always be adjacent to two empties in the bottom and right, and to an open piece and wxll to the left and above
+        # the following works because the first empty can be demonstrated to always be adjacent to two empties in the bottom and right, and to an open piece and wall to the left and above
         guesspiece = [0,0,0,0]
         if self.adjacencymap[fe[1]][fe[0]][0] == 2:
             guesspiece[0] = 1
@@ -470,10 +495,33 @@ class Pattern:
                 return g2
         return False
 
+    def analyse(self, depth=0):
+        if depth <= 0:
+            return copy(self).solve()
+        else:
+            c = self.analyse(depth-1)
+            if c:
+                return c
+            for x in self.allempty():
+                newmap = self.basewallmap()
+                newmap[x[1]][x[0]] = 2
+                c = Pattern(self.lenx,self.leny,wmap=newmap,walls=self.wallcount+1)
+                c = c.analyse(depth-1)
+                if c:
+                    rmap = self.basewallmap()
+                    for j in range(self.leny):
+                        for i in range(self.lenx):
+                            if c.wallmap[j][i] == 3:
+                                rmap[j][i] = 3
+                    print(render_compound(rmap,c.snakemap))
+                    return c
+        return False
+
+
 last_res = []
 
-def check(n,x,y,m=False):
-    ''' (int,int,int,int) -> None
+def check(n,x,y,m=False,pre=False):
+    ''' (int,int,int,int,list) -> None
     checks n patterns of size x by y for hampaths, and prints all the ones it finds as well as a count
     if you want to increase the amount of results (won't increase ham, but can give some insight) then you can set an m value
     if you set an m value, instead of having to pass all steps, it will only need to pass m (so the results will be less filtered)
